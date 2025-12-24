@@ -13,7 +13,7 @@ const DATA_FILE = 'database.json';
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static);
 
 // --- 資料庫讀寫 (保留你的原始功能) ---
 function readDB() {
@@ -126,4 +126,5 @@ function runGameLoop() {
 
 server.listen(PORT, () => {
     console.log(`GreenDash Cyber Server running at http://localhost:${PORT}`);
+
 });
