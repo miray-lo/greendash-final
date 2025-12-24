@@ -1,0 +1,207 @@
+ <!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>GreenDash Eco-Tech</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body data-theme="dark">
+
+  <div class="ambient-glow"></div>
+  <canvas id="particle-canvas"></canvas>
+  
+  <audio id="bg-music" loop><source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" type="audio/mpeg"></audio>
+  <audio id="sfx-check"><source src="https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3" type="audio/mpeg"></audio>
+
+  <div id="login-overlay" class="login-wrapper">
+    <div class="login-card glass-panel floating">
+      <div class="login-header">
+        <div class="logo-circle pulsing">🌱</div>
+        <h1>GreenDash</h1>
+        <p data-i18n="login_desc">Enter User ID to connect.</p>
+      </div>
+      <div class="login-body">
+        <div class="input-group">
+          <input type="text" id="inp-user" data-i18n-placeholder="ph_user" placeholder="請輸入識別代號..." autocomplete="off">
+        </div>
+        <button class="btn-primary glow-effect full-width" id="btn-login-action" data-i18n="btn_login">
+          CONNECT
+        </button>
+        <p id="login-msg" class="login-msg"></p>
+      </div>
+    </div>
+  </div>
+
+  <header class="navbar glass-panel">
+    <div class="container navbar-content">
+      <div class="brand">
+        <div class="logo-icon">GD</div>
+        <span class="brand-text">GreenDash</span>
+      </div>
+      <nav class="nav-links">
+        <a href="#dashboard" class="active" data-i18n="nav_dash">Dashboard</a>
+        <a href="#battle-arena" style="color: var(--accent);" data-i18n="nav_game">Battle</a>
+        <a href="#actions" data-i18n="nav_action">Actions</a>
+        <a href="#waste-tracker" data-i18n="nav_log">Logs</a>
+        <a href="#leaderboard" data-i18n="rank_title">Rank</a>
+      </nav>
+      <div class="nav-actions">
+        <select id="lang-select" class="glass-select">
+            <option value="zh">繁體中文</option>
+            <option value="en">English</option>
+            <option value="jp">日本語</option>
+        </select>
+        <button class="btn-icon" id="theme-toggle" title="Switch Theme">🌙</button>
+        <button class="btn-icon" id="btn-music" title="Toggle Music">🎵</button>
+        <div class="user-profile" id="user-profile">
+          <img id="user-avatar" src="" onclick="changeAvatar()"/>
+        </div>
+        <button class="btn-sm" id="btn-logout" data-i18n="btn_logout">Exit</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content container">
+    
+    <section id="dashboard" class="hero-section section-spacing">
+        <div class="hero-text">
+            <h1 data-i18n="hero_title">Make Campus Greener, <span class="gradient-text">Together.</span></h1>
+            <p data-i18n="hero_desc">Your personal dashboard for goals, actions, and measurable impact.</p>
+            <div class="sdg-badges">
+                <span class="badge">SDG 12</span>
+                <span class="badge">SDG 13</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-spacing stats-grid">
+        <div class="glass-card stat-card hover-up">
+            <h3 data-i18n="kpi_cups">Cups Saved</h3>
+            <div class="stat-value neon-text" id="kpi-cups">0</div>
+            <div class="glass-flash"></div>
+        </div>
+        <div class="glass-card stat-card hover-up">
+            <h3 data-i18n="kpi_carbon">Carbon Reduced (kg)</h3>
+            <div class="stat-value neon-text" id="kpi-carbon-hero">0.00</div>
+             <div class="glass-flash"></div>
+        </div>
+        <div class="glass-card stat-card hover-up">
+            <h3 data-i18n="kpi_rate">Completion Rate</h3>
+            <div class="stat-value neon-text" id="kpi-rate">0%</div>
+             <div class="glass-flash"></div>
+        </div>
+    </section>
+
+    <section id="battle-arena" class="section-spacing">
+      <div class="glass-card battle-card">
+        <div class="card-header">
+            <h2 data-i18n="game_title">⚡ Eco-Knowledge Battle</h2>
+            <p data-i18n="game_desc">Challenge your classmates in real-time!</p>
+        </div>
+        
+        <div id="battle-lobby" class="battle-screen fade-in">
+          <div class="lobby-status pulsing" data-i18n="lobby_wait">Waiting for players...</div>
+          <div class="player-grid" id="lobby-players"></div>
+          <div class="battle-controls">
+            <button id="btn-join-battle" class="btn-primary glow-effect btn-lg" data-i18n="btn_join">JOIN BATTLE</button>
+            <button id="btn-start-battle" class="btn-secondary btn-lg hidden" data-i18n="btn_start_game">START GAME (Host)</button>
+          </div>
+        </div>
+
+        <div id="battle-quiz" class="battle-screen hidden">
+          <div class="quiz-header">
+            <span class="quiz-progress"><span data-i18n="lbl_q">Question</span> <span id="q-current">1</span> / <span id="q-total">5</span></span>
+            <div class="timer-circle">
+                <svg><circle cx="40" cy="40" r="36"></circle><circle class="progress" id="timer-progress" cx="40" cy="40" r="36"></circle></svg>
+                <span id="q-timer">10</span>
+            </div>
+          </div>
+          <h3 id="q-text" class="quiz-question">Loading...</h3>
+          <div class="quiz-options-grid">
+            <button class="opt-btn" data-idx="0">A</button><button class="opt-btn" data-idx="1">B</button>
+            <button class="opt-btn" data-idx="2">C</button><button class="opt-btn" data-idx="3">D</button>
+          </div>
+          <p id="q-feedback" class="quiz-feedback"></p>
+        </div>
+
+        <div id="battle-result" class="battle-screen hidden">
+          <h2 data-i18n="battle_res">Battle Results 🏆</h2>
+          <div class="winner-podium">
+            <div class="podium p2"><div class="avatar-box">🥈</div><div class="name" id="win-2">-</div></div>
+            <div class="podium p1"><div class="avatar-box">🥇</div><div class="name" id="win-1">-</div></div>
+            <div class="podium p3"><div class="avatar-box">🥉</div><div class="name" id="win-3">-</div></div>
+          </div>
+          <button onclick="location.reload()" class="btn-secondary" style="margin-top: 30px;" data-i18n="btn_lobby">Return to Lobby</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="actions" class="section-spacing">
+      <div class="section-header-row">
+        <h2 data-i18n="sec_action">Actions</h2>
+        <button id="btn-add" class="btn-sm" data-i18n="btn_add">+ New Action</button>
+      </div>
+      <div class="split-layout reverse">
+        <div class="glass-card progress-card">
+          <h3 data-i18n="prog_title">Your Progress</h3>
+          <div class="progress-track"><div class="progress-fill" id="progress-bar"></div></div>
+          <div class="progress-meta"><span data-i18n="txt_completion">Completion:</span><strong id="completion" class="neon-text">0%</strong></div>
+        </div>
+        <ul id="checklist" class="checklist-grid"></ul>
+      </div>
+    </section>
+    
+    <section id="waste-tracker" class="section-spacing grid-2-col">
+      <div class="glass-card">
+          <h3 data-i18n="log_title">Log Waste</h3>
+          <div class="form-grid">
+            <div class="field">
+                <label data-i18n="log_type">Type</label>
+                <select id="log-type">
+                    <option value="recycle" data-i18n="opt_recycle">♻️ Recycle</option>
+                    <option value="trash" data-i18n="opt_trash">🗑️ Trash</option>
+                    <option value="food" data-i18n="opt_food">🍎 Compost</option>
+                </select>
+            </div>
+            <div class="field">
+                <label data-i18n="log_item">Item</label>
+                <input type="text" id="log-item" data-i18n-placeholder="ph_item" placeholder="e.g., Bottle">
+            </div>
+            <div class="field">
+                <label data-i18n="log_count">Count</label>
+                <input type="number" id="log-count" value="1" min="1">
+            </div>
+          </div>
+          <button id="btn-add-log" class="btn-primary full-width" style="margin-top: 20px;" data-i18n="btn_confirm">Submit Log</button>
+      </div>
+      <div class="glass-card">
+          <h3 data-i18n="sec_stats">Statistics</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem;" data-i18n="stats_desc">Based on your actions.</p>
+          <canvas id="chart"></canvas>
+      </div>
+    </section>
+
+    <section id="leaderboard" class="section-spacing">
+      <div class="glass-card">
+        <h3 data-i18n="rank_title">Leaderboard 🏆</h3>
+        <div class="table-responsive"><table class="rank-table"><tbody id="rank-list"></tbody></table></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><p>&copy; 2025 GreenDash Eco-Tech.</p></footer>
+
+  <dialog id="dlg-add" class="glass-modal">
+    <h3 data-i18n="modal_title">New Action Idea</h3>
+    <input id="new-task-text" type="text" data-i18n-placeholder="ph_task" placeholder="What's your plan?">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="document.getElementById('dlg-add').close()" data-i18n="btn_cancel">Cancel</button>
+      <button class="btn-primary" id="confirm-add" data-i18n="btn_add_confirm">Add</button>
+    </div>
+  </dialog>
+</body>
+</html>
