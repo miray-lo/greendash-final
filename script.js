@@ -1,5 +1,5 @@
  document.addEventListener('DOMContentLoaded', () => {
-  const API_BASE = 'http://localhost:3000/api';
+ const API_BASE = '/api';
   let currentUser = null;
   const socket = io(); 
 
@@ -225,4 +225,5 @@
   
   function initParticleBackground(){ const c=document.getElementById('particle-canvas'), ctx=c.getContext('2d'); c.width=window.innerWidth; c.height=window.innerHeight; let ps=[]; for(let i=0;i<30;i++)ps.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*2,d:Math.random()*0.5,yv:Math.random()*0.5}); function animate(){ ctx.clearRect(0,0,c.width,c.height); ctx.fillStyle='rgba(16,185,129,0.4)'; ps.forEach(p=>{ p.y-=p.yv; if(p.y<0)p.y=c.height; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); }); requestAnimationFrame(animate); } animate(); }
 });
+
 function changeAvatar(){ document.getElementById('user-avatar').src=`https://api.dicebear.com/7.x/notionists/svg?seed=${Math.random()}`; }
